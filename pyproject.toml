@@ -1,0 +1,15 @@
+[project]
+name = "clarity"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "google-adk>=1.18.0",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
+    "jinja2>=3.1.4",
+    "google-cloud-firestore>=2.16.0",
+    "google-cloud-aiplatform>=1.66.0",
+    "python-multipart>=0.0.9",
+]

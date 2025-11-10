@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="space-y-4">
+  <h2 class="text-xl font-medium">Share these links</h2>
+  <div class="rounded border bg-white p-4">
+    <p class="text-sm text-slate-600">Partner A link</p>
+    <input class="w-full p-2 border rounded" value="{{ a_link }}" readonly onclick="this.select()" />
+  </div>
+  <div class="rounded border bg-white p-4">
+    <p class="text-sm text-slate-600">Partner B link</p>
+    <input class="w-full p-2 border rounded" value="{{ b_link }}" readonly onclick="this.select()" />
+  </div>
+  <p class="text-xs text-slate-500">Session: {{ session_id }}</p>
+  <p class="text-slate-600">Open each link in separate tabs or devices.</p>
+</div>
+{% endblock %}
+
