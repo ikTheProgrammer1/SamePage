@@ -1,19 +1,32 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>SamePage</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // Configure Tailwind Play CDN (after load) to use class-based dark mode
+      try { tailwind.config = { darkMode: 'class' }; } catch (e) {}
+    </script>
+    <!-- Dark mode is the default; html has class="dark" -->
   </head>
-  <body class="bg-slate-50 text-slate-900">
+  <body class="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+    <!-- Ambient gradient + grid background -->
+    <div class="fixed inset-0 -z-10 pointer-events-none">
+      <div class="absolute inset-0 opacity-30" style="background-image:radial-gradient(900px 500px at 15% -10%, rgba(59,130,246,.25), transparent 60%), radial-gradient(700px 400px at 85% 110%, rgba(16,185,129,.2), transparent 60%);"></div>
+      <div class="absolute inset-0 opacity-10" style="background-image:linear-gradient(rgba(255,255,255,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.08) 1px, transparent 1px); background-size:40px 40px;"></div>
+    </div>
+
     <div class="max-w-3xl mx-auto p-6">
-      <header class="mb-6">
-        <h1 class="text-2xl font-semibold">SamePage</h1>
-        <p class="text-slate-600">Get on the same page after a conversation.</p>
+      <header class="mb-6 flex items-start justify-between gap-3">
+        <div>
+          <h1 class="text-2xl font-semibold">SamePage</h1>
+          <p class="text-slate-600 dark:text-slate-300">Get on the same page after a conversation.</p>
+        </div>
       </header>
       {% block content %}{% endblock %}
-      <footer class="mt-10 text-xs text-slate-500">
+      <footer class="mt-10 text-xs text-slate-500 dark:text-slate-400">
         <p>
           Anonymous by default. Sessions delete after 24h. Built for the Cloud Run Hackathon.
         </p>
@@ -21,4 +34,3 @@
     </div>
   </body>
   </html>
-

@@ -1,25 +1,45 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="space-y-4">
-  <div class="rounded border bg-white p-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <div class="text-3xl font-semibold">{{ score }}</div>
-        <div class="text-slate-600">Alignment Score</div>
+<div id="page-result" class="space-y-4" data-score="{{ score }}" data-label="{{ label }}">
+  <!-- Score header with animated radial gauge and label chip -->
+  <div class="rounded border dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+    <div class="flex items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="relative w-28 h-28 drop-shadow-[0_0_30px_rgba(34,197,94,0.35)]" aria-label="Alignment score">
+          <svg viewBox="0 0 120 120" class="w-28 h-28">
+            <defs>
+              <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#22c55e"/>
+                <stop offset="100%" stop-color="#3b82f6"/>
+              </linearGradient>
+            </defs>
+            <circle cx="60" cy="60" r="52" class="fill-none stroke-slate-200 dark:stroke-slate-700" stroke-width="12" />
+            <circle id="gauge" cx="60" cy="60" r="52"
+                    class="fill-none transition-[stroke-dashoffset] duration-[1200ms] ease-out"
+                    stroke="url(#gaugeGrad)" stroke-linecap="round" stroke-width="12"
+                    stroke-dasharray="327" stroke-dashoffset="327" />
+          </svg>
+          <div class="absolute inset-0 grid place-items-center">
+            <div class="text-2xl font-semibold" id="gauge-val">{{ score }}</div>
+          </div>
+        </div>
+        <div>
+          <div class="text-slate-600">Alignment Score</div>
+          <div class="text-3xl font-semibold">{{ score }}</div>
+        </div>
       </div>
-      <div class="text-right">
-        <span class="inline-block px-3 py-1 rounded-full text-white {{ 'bg-green-600' if label=='Aligned' else ('bg-yellow-600' if label=='Partial' else 'bg-red-600') }}">{{ label }}</span>
+      <div class="text-right flex items-center gap-2">
+        <a href="/__diag/adk" target="_blank" title="Agent Development Kit diagnostics"
+           class="hidden md:inline-block text-xs px-2 py-1 rounded-full border {{ 'border-emerald-600 text-emerald-300' if adk_meta and adk_meta.adk_used else 'border-slate-300 text-slate-600 dark:border-slate-600 dark:text-slate-300' }}">
+          Agents: ADK
+        </a>
+        <span class="inline-block px-3 py-1 rounded-full text-white {{ 'bg-emerald-600' if label=='Aligned' else ('bg-amber-600' if label=='Partial' else 'bg-rose-600') }}">{{ label }}</span>
       </div>
     </div>
-    {% if adk_meta and adk_meta.adk_used %}
-    <div class="mt-2 text-xs text-slate-600">
-      Agents: ADK orchestrated
-    </div>
-    {% endif %}
   </div>
 
   <div class="grid md:grid-cols-2 gap-4">
-    <div class="rounded border bg-white p-4">
+    <div class="rounded border dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
       <h3 class="font-medium mb-2">Consensus</h3>
       <ul class="list-disc ml-5 space-y-1">
         {% for item in consensus %}
@@ -27,7 +47,7 @@
         {% endfor %}
       </ul>
     </div>
-    <div class="rounded border bg-white p-4">
+    <div class="rounded border dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
       <h3 class="font-medium mb-2">Divergences</h3>
       <ul class="list-disc ml-5 space-y-1">
         {% for item in divergence %}
@@ -37,19 +57,22 @@
     </div>
   </div>
 
-  <div class="rounded border bg-white p-4">
+  <div class="rounded border dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
     <h3 class="font-medium mb-2">Themes</h3>
     <div class="flex flex-wrap gap-2">
       {% for t in themes %}
-      <span class="text-xs bg-slate-200 px-2 py-1 rounded">{{ t }}</span>
+      <span class="text-xs bg-slate-200 dark:bg-slate-700/80 px-2 py-1 rounded border border-slate-300/20 dark:border-slate-600/40">{{ t }}</span>
       {% endfor %}
     </div>
   </div>
 
   {% if recommendations %}
-  <div class="rounded border bg-white p-4">
-    <h3 class="font-medium mb-2">Recommendations</h3>
-    <ul class="list-disc ml-5 space-y-1">
+  <div class="rounded border dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="font-medium">Recommendations</h3>
+      <button id="copy-recs" class="text-xs px-2 py-1 bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded hover:bg-slate-300">Copy all</button>
+    </div>
+    <ul id="recs-list" class="list-disc ml-5 space-y-1">
       {% for r in recommendations %}
       <li>{{ r }}</li>
       {% endfor %}
@@ -59,7 +82,7 @@
 
   {% if _evidence %}
   <details class="text-xs text-slate-600">
-    <summary class="cursor-pointer">Evidence</summary>
+    <summary class="cursor-pointer">Why this score?</summary>
     <pre class="mt-2 whitespace-pre-wrap">{{ _evidence }}</pre>
   </details>
   {% endif %}
@@ -72,7 +95,72 @@
   {% endif %}
 
   <div>
-    <a href="/" class="text-sm text-blue-700 hover:underline">Start a new session</a>
+    <a href="/" class="text-sm text-blue-700 dark:text-blue-400 hover:underline">Start a new session</a>
   </div>
+
+  <!-- Celebration confetti (Aligned only) -->
+  <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none" style="display:none"></canvas>
 </div>
+
+<script>
+  (function(){
+    const root = document.getElementById('page-result');
+    if (!root) return;
+    const score = Number(root.dataset.score || '0');
+    const label = root.dataset.label || '';
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Animate gauge
+    try {
+      const dash = 327, el = document.getElementById('gauge');
+      if (el && !reduced) {
+        const clamped = Math.max(0, Math.min(100, score));
+        const offset = dash - (dash * clamped) / 100;
+        requestAnimationFrame(() => { el.style.strokeDashoffset = String(offset); });
+      } else if (el) {
+        // Set final position without animation
+        const clamped = Math.max(0, Math.min(100, score));
+        const offset = dash - (dash * clamped) / 100;
+        el.style.transition = 'none';
+        el.style.strokeDashoffset = String(offset);
+      }
+    } catch {}
+
+    // Copy recommendations
+    const btn = document.getElementById('copy-recs');
+    if (btn) {
+      btn.addEventListener('click', async () => {
+        try {
+          const items = Array.from(document.querySelectorAll('#recs-list li')).map(li => '- ' + li.textContent.trim());
+          const text = items.join('\n');
+          await navigator.clipboard.writeText(text);
+          const old = btn.textContent; btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = old, 900);
+        } catch {}
+      });
+    }
+
+    // Confetti for Aligned
+    if (label === 'Aligned' && !reduced) {
+      const c = document.getElementById('confetti-canvas');
+      if (!c) return; const ctx = c.getContext('2d');
+      const resize = () => { c.width = innerWidth; c.height = innerHeight; };
+      resize(); window.addEventListener('resize', resize);
+      c.style.display='block';
+      const colors = ['#059669','#10b981','#34d399','#6ee7b7'];
+      const parts = Array.from({length:50},()=>({
+        x: Math.random()*c.width, y: -10-Math.random()*c.height/3,
+        r: 3+Math.random()*5, vy: 2+Math.random()*3,
+        col: colors[(Math.random()*colors.length)|0]
+      }));
+      const t0 = performance.now();
+      const step = (t) => {
+        if (t - t0 > 900) { c.style.display='none'; return; }
+        ctx.clearRect(0,0,c.width,c.height);
+        parts.forEach(p=>{ p.y+=p.vy; ctx.fillStyle=p.col; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283); ctx.fill(); });
+        requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    }
+  })();
+</script>
 {% endblock %}

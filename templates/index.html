@@ -1,17 +1,83 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="space-y-4">
-  <h2 class="text-xl font-medium">Share these links</h2>
-  <div class="rounded border bg-white p-4">
-    <p class="text-sm text-slate-600">Partner A link</p>
-    <input class="w-full p-2 border rounded" value="{{ a_link }}" readonly onclick="this.select()" />
+<div class="space-y-6">
+  <!-- Hero -->
+  <div class="rounded-xl p-[1px] bg-gradient-to-r from-blue-500/50 to-emerald-500/50">
+    <div class="rounded-[11px] bg-white/70 dark:bg-slate-800/70 backdrop-blur border dark:border-slate-700 p-6">
+      <h2 class="text-2xl font-semibold bg-gradient-to-r from-blue-400 to-emerald-300 bg-clip-text text-transparent">Get on the same page in minutes</h2>
+      <p class="text-slate-600 dark:text-slate-300 mt-2">Compare each partner’s takeaways, see where you align, and get concise recommendations.</p>
+      <div class="mt-4 flex items-center gap-3">
+        <a href="#share-links" class="px-4 py-2 rounded-md text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-emerald-500 shadow-lg shadow-emerald-500/20 hover:from-blue-500 hover:to-emerald-400">Try now</a>
+        <span class="text-xs text-slate-500 dark:text-slate-400">Built on Google Cloud Run + Vertex AI</span>
+      </div>
+    </div>
   </div>
-  <div class="rounded border bg-white p-4">
-    <p class="text-sm text-slate-600">Partner B link</p>
-    <input class="w-full p-2 border rounded" value="{{ b_link }}" readonly onclick="this.select()" />
-  </div>
-  <p class="text-xs text-slate-500">Session: {{ session_id }}</p>
-  <p class="text-slate-600">Open each link in separate tabs or devices.</p>
-</div>
-{% endblock %}
 
+  <!-- How it works -->
+  <div class="grid sm:grid-cols-3 gap-3 text-sm">
+    <div class="rounded-xl p-[1px] bg-gradient-to-r from-blue-500/30 to-emerald-500/30">
+      <div class="rounded-[11px] bg-white/70 dark:bg-slate-800/70 backdrop-blur border dark:border-slate-700 p-4">
+      <div class="text-2xl">✍️</div>
+      <div class="font-medium">Enter</div>
+      <div class="text-slate-600 dark:text-slate-300">Each partner adds a quick summary, request, and tone.</div>
+      </div>
+    </div>
+    <div class="rounded-xl p-[1px] bg-gradient-to-r from-blue-500/30 to-emerald-500/30">
+      <div class="rounded-[11px] bg-white/70 dark:bg-slate-800/70 backdrop-blur border dark:border-slate-700 p-4">
+      <div class="text-2xl">🔎</div>
+      <div class="font-medium">Compare</div>
+      <div class="text-slate-600 dark:text-slate-300">We compute an alignment score with evidence.</div>
+      </div>
+    </div>
+    <div class="rounded-xl p-[1px] bg-gradient-to-r from-blue-500/30 to-emerald-500/30">
+      <div class="rounded-[11px] bg-white/70 dark:bg-slate-800/70 backdrop-blur border dark:border-slate-700 p-4">
+      <div class="text-2xl">🤝</div>
+      <div class="font-medium">Align</div>
+      <div class="text-slate-600 dark:text-slate-300">Follow 2–3 short recommendations to sync up.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Share links -->
+  <div id="share-links" class="space-y-4">
+    <h2 class="text-xl font-medium">Share these links</h2>
+    <div class="rounded-xl p-[1px] bg-gradient-to-r from-blue-500/20 to-emerald-500/20">
+      <div class="rounded-[11px] bg-white/70 dark:bg-slate-800/70 backdrop-blur border dark:border-slate-700 p-4">
+      <div class="flex items-center justify-between gap-2">
+        <div class="grow">
+          <p class="text-sm text-slate-600 dark:text-slate-300">Partner A link</p>
+          <input id="link-a" class="w-full p-2 border rounded dark:bg-slate-900 dark:border-slate-700" value="{{ a_link }}" readonly onclick="this.select()" />
+        </div>
+        <button data-copy="#link-a" class="self-end text-xs px-3 py-1 rounded text-white bg-gradient-to-r from-blue-600 to-emerald-500 shadow hover:from-blue-500 hover:to-emerald-400">Copy</button>
+      </div>
+      </div>
+    </div>
+    <div class="rounded-xl p-[1px] bg-gradient-to-r from-blue-500/20 to-emerald-500/20">
+      <div class="rounded-[11px] bg-white/70 dark:bg-slate-800/70 backdrop-blur border dark:border-slate-700 p-4">
+      <div class="flex items-center justify-between gap-2">
+        <div class="grow">
+          <p class="text-sm text-slate-600 dark:text-slate-300">Partner B link</p>
+          <input id="link-b" class="w-full p-2 border rounded dark:bg-slate-900 dark:border-slate-700" value="{{ b_link }}" readonly onclick="this.select()" />
+        </div>
+        <button data-copy="#link-b" class="self-end text-xs px-3 py-1 rounded text-white bg-gradient-to-r from-blue-600 to-emerald-500 shadow hover:from-blue-500 hover:to-emerald-400">Copy</button>
+      </div>
+      </div>
+    </div>
+    <p class="text-xs text-slate-500">Session: {{ session_id }}</p>
+    <p class="text-slate-600 dark:text-slate-300">Open each link in separate tabs or devices.</p>
+    <div class="text-xs text-slate-600 dark:text-slate-300">Built on Google Cloud Run + Vertex AI • <a href="/README.md" class="text-blue-700 dark:text-blue-400 hover:underline">Learn more</a></div>
+  </div>
+</div>
+
+<script>
+  // Copy buttons for share links
+  document.querySelectorAll('[data-copy]')?.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const sel = btn.getAttribute('data-copy');
+      if (!sel) return; const inp = document.querySelector(sel);
+      if (!(inp && inp.value)) return;
+      try { await navigator.clipboard.writeText(inp.value); const old=btn.textContent; btn.textContent='Copied!'; setTimeout(()=>btn.textContent=old, 900);} catch {}
+    });
+  });
+</script>
+{% endblock %}

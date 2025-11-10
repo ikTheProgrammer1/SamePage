@@ -246,6 +246,24 @@ def healthz():
     return {"ok": True, "ts": int(time.time())}
 
 
+# Lightweight status probe so both partners auto-navigate from the waiting page
+@app.get("/api/session/{session}")
+def api_session_status(session: str):
+    if firestore is None:
+        # In local/offline mode we can't check persistence; treat as pending
+        return {"status": "pending"}
+    try:
+        client = _firestore_client()
+        doc = client.collection("sessions").document(session).get()
+        if not doc.exists:
+            return {"status": "pending"}
+        data = doc.to_dict() or {}
+        return {"status": data.get("status", "pending"), "score": data.get("score"), "label": data.get("label")}
+    except Exception:
+        # Never fail the poller; keep UI in waiting state
+        return {"status": "pending"}
+
+
 # Minimal diagnostics to verify ADK/Google namespace in production
 @app.get("/__diag/adk")
 def diag_adk():

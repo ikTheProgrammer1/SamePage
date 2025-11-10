@@ -1,34 +1,67 @@
 {% extends "base.html" %}
 {% block content %}
-<form method="post" action="/submit" class="space-y-4">
+<form method="post" action="/submit" class="space-y-4" x-data>
   <input type="hidden" name="session" value="{{ session }}" />
   <input type="hidden" name="token" value="{{ token }}" />
 
   <h2 class="text-xl font-medium">Partner {{ who }}</h2>
 
   <label class="block">
-    <span class="text-sm text-slate-700">Key takeaway (1–2 sentences)</span>
-    <textarea name="takeaway" required class="mt-1 w-full border rounded p-2" rows="3"></textarea>
+    <span class="text-sm text-slate-700 dark:text-slate-300">Key takeaway <span class="text-slate-500 dark:text-slate-400">(1–2 sentences)</span></span>
+    <textarea id="takeaway" name="takeaway" required class="mt-1 w-full border rounded p-2 dark:bg-slate-900 dark:border-slate-700" rows="3" aria-describedby="takeaway-help"></textarea>
+    <div id="takeaway-help" class="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 mt-1">
+      <span>Example: “We agreed I’ll do dishes tonight, you handle trash tomorrow.”</span>
+      <span><span id="takeaway-count">0</span> chars</span>
+    </div>
   </label>
 
   <label class="block">
-    <span class="text-sm text-slate-700">Request / Next step (who/what/when)</span>
-    <textarea name="req_text" required class="mt-1 w-full border rounded p-2" rows="3"></textarea>
+    <span class="text-sm text-slate-700 dark:text-slate-300">Request / Next step <span class="text-slate-500 dark:text-slate-400">(who / what / when)</span></span>
+    <textarea id="req_text" name="req_text" required class="mt-1 w-full border rounded p-2 dark:bg-slate-900 dark:border-slate-700" rows="3" aria-describedby="req-help"></textarea>
+    <div id="req-help" class="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 mt-1">
+      <span>Example: “I’ll do dishes after dinner; you take trash out by 8am.”</span>
+      <span><span id="req-count">0</span> chars</span>
+    </div>
   </label>
 
   <label class="block">
-    <span class="text-sm text-slate-700">Tone (one word)</span>
-    <input name="tone" required class="mt-1 w-full border rounded p-2" placeholder="e.g., relieved, stressed, calm" />
+    <span class="text-sm text-slate-700 dark:text-slate-300">Tone <span class="text-slate-500 dark:text-slate-400">(one word)</span></span>
+    <input id="tone" name="tone" required class="mt-1 w-full border rounded p-2 dark:bg-slate-900 dark:border-slate-700" placeholder="e.g., relieved, stressed, calm" />
+    <div class="mt-2 flex flex-wrap gap-2 text-xs">
+      {% for t in ['relieved','stressed','calm','hopeful','neutral'] %}
+      <button type="button" class="px-2 py-1 rounded bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 hover:bg-slate-300" data-fill="#tone" data-value="{{ t }}">{{ t }}</button>
+      {% endfor %}
+    </div>
   </label>
 
-  <label class="flex items-center gap-2 text-sm text-slate-700">
+  <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
     <input type="checkbox" name="consent" />
     <span>I consent to store this session up to 24h to show results.</span>
   </label>
 
   <div class="pt-2">
-    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Submit</button>
+    <button class="px-4 py-2 rounded-md text-white bg-gradient-to-r from-blue-600 to-emerald-500 shadow-lg shadow-emerald-500/20 hover:from-blue-500 hover:to-emerald-400">Submit</button>
   </div>
 </form>
-{% endblock %}
 
+<script>
+  // Character counters
+  const bindCount = (id, cid) => {
+    const el = document.getElementById(id), c = document.getElementById(cid);
+    if (!el || !c) return;
+    const upd = () => { c.textContent = String(el.value.length); };
+    el.addEventListener('input', upd); upd();
+  };
+  bindCount('takeaway','takeaway-count');
+  bindCount('req_text','req-count');
+
+  // Tone fill pills
+  document.querySelectorAll('[data-fill]')?.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sel = btn.getAttribute('data-fill'); const val = btn.getAttribute('data-value') || '';
+      const target = sel ? document.querySelector(sel) : null; if (!target) return;
+      target.value = val; target.focus();
+    });
+  });
+</script>
+{% endblock %}
