@@ -55,7 +55,7 @@ Each partner types three brief fields. We compute a **0–100 Alignment Score** 
 * **Service A (FastAPI + Jinja2):** serves forms & result page; computes hybrid score; calls Gemini if 60–75
 * **Firestore:** sessions, tokens, submissions, scores, TTL
 * **Vertex AI:** `text-embedding-004` for similarity
-* **Gemini 1.5 Pro:** JSON explanation/tie-breaker (sync call)
+* **Gemini 2.5 Pro:** JSON explanation/tie-breaker (sync call)
 * **Region:** `us-east1`
 
 ### Routes
@@ -146,7 +146,7 @@ Each partner types three brief fields. We compute a **0–100 Alignment Score** 
 
 * **Mediator**
   *Goal:* generate short explanation + 2–3 reconciliation rephrasings when score is borderline.
-  *Tools:* `GeminiExplainTool` (Gemini 1.5 Pro, JSON-mode, temp=0).
+  *Tools:* `GeminiExplainTool` (Gemini 2.5 Pro, JSON-mode, temp=0).
   *Output:* `{llm_explainer, recommendations[], llm_latency_ms}`
 
 ### Orchestration (ADK Runner)

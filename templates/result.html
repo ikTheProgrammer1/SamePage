@@ -11,6 +11,11 @@
         <span class="inline-block px-3 py-1 rounded-full text-white {{ 'bg-green-600' if label=='Aligned' else ('bg-yellow-600' if label=='Partial' else 'bg-red-600') }}">{{ label }}</span>
       </div>
     </div>
+    {% if adk_meta and adk_meta.adk_used %}
+    <div class="mt-2 text-xs text-slate-600">
+      Agents: ADK orchestrated
+    </div>
+    {% endif %}
   </div>
 
   <div class="grid md:grid-cols-2 gap-4">
@@ -59,9 +64,15 @@
   </details>
   {% endif %}
 
+  {% if adk_meta %}
+  <details class="text-xs text-slate-600">
+    <summary class="cursor-pointer">Agents (ADK)</summary>
+    <pre class="mt-2 whitespace-pre-wrap">{{ adk_meta }}</pre>
+  </details>
+  {% endif %}
+
   <div>
     <a href="/" class="text-sm text-blue-700 hover:underline">Start a new session</a>
   </div>
 </div>
 {% endblock %}
-

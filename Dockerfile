@@ -8,7 +8,7 @@ WORKDIR /app
 
 # System deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl ca-certificates && \
+    curl ca-certificates git && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy minimal files first for better layer caching
@@ -22,8 +22,13 @@ RUN pip install --no-cache-dir --upgrade pip && \
       jinja2==3.1.4 \
       google-cloud-firestore==2.16.0 \
       google-cloud-aiplatform==1.66.0 \
-      python-multipart==0.0.9 \
-      google-adk>=1.18.0
+      python-multipart==0.0.9
+
+# Prevent legacy 'google' stub package from blocking namespace imports and
+# ensure ADK is importable at build time (fail-fast if not).
+RUN pip uninstall -y google || true
+RUN pip install --no-cache-dir git+https://github.com/google/adk-python.git@main
+RUN python -c "import google, google.adk; import sys; print('ADK import OK; google locations:', getattr(__import__('google').__spec__, 'submodule_search_locations', []))"
 
 # Copy app
 COPY . /app
@@ -35,4 +40,3 @@ USER appuser
 ENV PORT=8080
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
-

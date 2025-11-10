@@ -8,6 +8,8 @@ from fastapi import FastAPI, Request, Form, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+import importlib.util as _importlib_util
+import importlib.metadata as _importlib_metadata
 
 try:
     from google.cloud import firestore  # type: ignore
@@ -19,6 +21,7 @@ from scoring import (
     needs_llm_mediator,
     llm_explain_or_fallback,
 )
+from adk_integration import run_adk_flow
 
 
 def _env(name: str, default: Optional[str] = None) -> Optional[str]:
@@ -178,16 +181,19 @@ def submit(
         subs_dict[s.id] = s.to_dict() or {}
 
     if "A" in subs_dict and "B" in subs_dict:
-        # Compute score & possibly LLM explain
-        result = compute_alignment(subs_dict["A"], subs_dict["B"])  # type: ignore[arg-type]
-        if needs_llm_mediator(result):
-            llm = llm_explain_or_fallback(subs_dict["A"], subs_dict["B"], result)
-            result.update(llm)
+        # Compute via ADK flow (if enabled), else direct
+        if ENABLE_ADK:
+            result, adk_meta = run_adk_flow(subs_dict["A"], subs_dict["B"])  # type: ignore[arg-type]
+            payload = {"status": "completed", **result, "adk_meta": adk_meta}
+        else:
+            result = compute_alignment(subs_dict["A"], subs_dict["B"])  # type: ignore[arg-type]
+            if needs_llm_mediator(result):
+                llm = llm_explain_or_fallback(subs_dict["A"], subs_dict["B"], result)
+                result.update(llm)
+            payload = {"status": "completed", **result}
 
         # Save to session
-        client.collection("sessions").document(session).set(
-            {"status": "completed", **result}, merge=True
-        )
+        client.collection("sessions").document(session).set(payload, merge=True)
         return RedirectResponse(url=f"/result/{session}", status_code=303)
 
     return templates.TemplateResponse(
@@ -238,6 +244,61 @@ def result(request: Request, session: str):
 @app.get("/healthz")
 def healthz():
     return {"ok": True, "ts": int(time.time())}
+
+
+# Minimal diagnostics to verify ADK/Google namespace in production
+@app.get("/__diag/adk")
+def diag_adk():
+    info: Dict[str, Any] = {
+        "ENABLE_ADK": ENABLE_ADK,
+    }
+    # Check google.adk importability
+    try:
+        spec = _importlib_util.find_spec("google.adk")
+        info["adk_spec_found"] = bool(spec)
+        if spec is not None:
+            info["adk_origin"] = getattr(spec, "origin", None)
+    except Exception as e:  # pragma: no cover
+        info["adk_spec_error"] = f"{type(e).__name__}: {e}"
+
+    try:
+        import google  # type: ignore
+
+        info["google_has_file"] = hasattr(google, "__file__")
+        info["google_has_path"] = hasattr(google, "__path__")
+        info["google_file"] = getattr(google, "__file__", None)
+        # Heuristic: namespace packages have __path__ but no __file__
+        info["google_is_namespace_like"] = bool(
+            hasattr(google, "__path__") and not hasattr(google, "__file__")
+        )
+        info["google_spec_locations"] = (
+            list(getattr(getattr(google, "__spec__", None), "submodule_search_locations", []) or [])
+        )
+    except Exception as e:  # pragma: no cover
+        info["google_import_error"] = f"{type(e).__name__}: {e}"
+
+    # List installed packages relevant to google/adk
+    try:
+        pkgs = []
+        for dist in _importlib_metadata.distributions():
+            name = dist.metadata.get("Name", "")
+            if not name:
+                continue
+            lname = name.lower()
+            if lname.startswith("google") or "adk" in lname:
+                pkgs.append({
+                    "name": name,
+                    "version": dist.version,
+                })
+        # Sort for stable output
+        pkgs.sort(key=lambda d: d["name"].lower())
+        info["installed_google_packages"] = pkgs
+    except Exception as e:  # pragma: no cover
+        info["pkg_list_error"] = f"{type(e).__name__}: {e}"
+
+    # Final verdicts
+    info["adk_importable"] = info.get("adk_spec_found", False) is True
+    return info
 
 
 # Keep an entrypoint for local runs

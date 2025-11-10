@@ -10,13 +10,15 @@ SamePage helps couples get on the same page after a conversation by comparing ea
 Env vars:
 - `PROJECT_ID` (or `GOOGLE_CLOUD_PROJECT`)
 - `REGION` default `us-east1`
+- `VERTEX_REGION` default `us-central1` (Vertex AI embeddings + Gemini region)
 - `ENABLE_VERTEX=1` to use Vertex embeddings and Gemini; otherwise deterministic fallbacks
+- `ENABLE_ADK=1` to run Scorer→Mediator via ADK orchestration and store `adk_meta`
 
 ## Architecture
 
 - FastAPI + Jinja2 (single Cloud Run service)
 - Firestore: `sessions/{session}`, `sessions/{session}/submissions/A|B`
-- Vertex AI: `text-embedding-004` for similarity; Gemini 1.5 Pro for borderline explanations
+- Vertex AI: `text-embedding-004` for similarity; Gemini 2.5 Pro for borderline explanations
 
 Routes:
 - `GET /` → creates a session and shows two shareable links
@@ -38,4 +40,26 @@ Cloud Run service gets `PROJECT_ID`/`REGION` envs from `cloudbuild.yaml`. Ensure
 
 ## ADK Integration (Agents)
 
-The code includes a clear separation of concerns for a Scorer (hybrid similarity) and a Mediator (LLM explanation). You can wire Google’s Agent Development Kit (ADK) to orchestrate these as two agents. For judging, reference `main.py` and `scoring.py` and enable `ENABLE_VERTEX=1`.
+- Runtime path can use ADK when `ENABLE_ADK=1`. The scoring step calls `adk_integration.run_adk_flow`, which orchestrates:
+  - Scorer: computes score, label, consensus/divergence/themes (hybrid embedding + parsing)
+  - Mediator: if score in 60–75, generates an explainer and 2–3 reconciliations (Gemini or fallback)
+- The session document includes `adk_meta` with agent descriptors/outputs for logs and judging.
+- Files: `adk_integration.py`, `scoring.py`, and `main.py` (POST `/submit` path).
+
+Agent discovery layout (for ADK CLI/UI):
+- `src/samepage_app/agents/scorer/agent.py` (exports `root_agent`)
+- `src/samepage_app/agents/mediator/agent.py` (exports `root_agent`)
+- Each agent directory has `__init__.py` that does `from . import agent` per ADK docs.
+
+Local inspection:
+- `adk web src/samepage_app/agents/scorer`
+- `adk run src/samepage_app/agents/mediator`
+
+## ADK Web (Trace UI)
+
+- Install deps (uses uv): `uv sync`
+- Start UI (venv): `.venv/bin/adk web src/samepage_app/agents --no-reload`
+- Or use the helper script: `./scripts/adk-web.sh` (set `PORT=8765` to choose a port)
+- In the browser, select `scorer` or `mediator`, chat to create a session, then open the Trace tab to inspect Event, Request, Response, and Graph.
+
+Make target (optional): `make adk-web` runs the script if available.

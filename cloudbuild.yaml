@@ -27,7 +27,7 @@ steps:
       - '--region=${_REGION}'
       - '--platform=managed'
       - '--allow-unauthenticated'
-      - '--set-env-vars=PROJECT_ID=$PROJECT_ID,REGION=${_REGION},ENABLE_VERTEX=1'
+      - '--set-env-vars=PROJECT_ID=$PROJECT_ID,REGION=${_REGION},VERTEX_REGION=us-central1,ENABLE_VERTEX=1,ENABLE_ADK=1'
 
 images:
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:${_TAG}'

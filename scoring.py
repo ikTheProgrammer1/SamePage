@@ -22,7 +22,8 @@ def _vertex_embed(texts: List[str]) -> List[List[float]]:
     from vertexai.preview.language_models import TextEmbeddingModel  # type: ignore
 
     project = os.getenv("PROJECT_ID") or os.getenv("GOOGLE_CLOUD_PROJECT")
-    region = os.getenv("REGION", "us-east1")
+    # Prefer a dedicated Vertex region; default to us-central1
+    region = os.getenv("VERTEX_REGION") or os.getenv("REGION") or "us-central1"
     if project:
         vertexai.init(project=project, location=region)  # type: ignore
     model = TextEmbeddingModel.from_pretrained("text-embedding-004")
@@ -262,10 +263,11 @@ def llm_explain_or_fallback(
         import vertexai  # type: ignore
 
         project = os.getenv("PROJECT_ID") or os.getenv("GOOGLE_CLOUD_PROJECT")
-        region = os.getenv("REGION", "us-east1")
+        # Prefer a dedicated Vertex region; default to us-central1
+        region = os.getenv("VERTEX_REGION") or os.getenv("REGION") or "us-central1"
         if project:
             vertexai.init(project=project, location=region)  # type: ignore
-        model = GenerativeModel("gemini-1.5-pro")
+        model = GenerativeModel("gemini-2.5-pro")
         prompt = _mediator_prompt(a, b, result)
         resp = model.generate_content(prompt, generation_config={"temperature": 0})
         text = (resp.candidates[0].content.parts[0].text or "").strip()  # type: ignore
@@ -347,4 +349,3 @@ def extract_themes(texts: List[str]) -> List[str]:
             freq[t] = freq.get(t, 0) + 1
         themes = [w for w, _ in sorted(freq.items(), key=lambda kv: -kv[1])[:3]]
     return themes[:5]
-
