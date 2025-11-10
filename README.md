@@ -1,5 +1,7 @@
 # SamePage — Couples Alignment Assistant
 
+
+## STOP ARGUING WITH YOUR SOULMATE
 SamePage helps couples get on the same page after a conversation by comparing each partner’s takeaways, surfacing consensus/divergence, and suggesting reconciliations.
 
 ## Quick Start
